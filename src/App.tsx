@@ -18,6 +18,7 @@ declare global {
         };
         ready: () => void;
         openTelegramLink: (url: string) => void;
+        expand: () => void;
       };
     };
     ethereum?: any; // 修正 ethereum 類型聲明

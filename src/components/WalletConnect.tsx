@@ -1,4 +1,7 @@
-import { ConnectWallet } from "@thirdweb-dev/react";
+import { ConnectButton } from "thirdweb/react";
+import { inAppWallet } from "thirdweb/wallets";
+import { avalanche } from "thirdweb/chains";
+import { client } from "../client";
 import { useWalletStore } from '../stores/walletStore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Share2 } from "lucide-react";
@@ -26,16 +29,19 @@ export function WalletConnect() {
   return (
     <div className="w-full bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-xl flex items-center justify-center gap-2 text-lg font-semibold transition-colors">
       {!isConnected ? (
-        <ConnectWallet
-          theme="dark"
-          btnTitle="連接錢包"
-          modalTitle="選擇連接方式"
-          modalSize="wide"
-          welcomeScreen={{
-            title: "歡迎來到聖誕禮物交換",
-            subtitle: "請選擇連接方式",
+        <ConnectButton
+          client={client}
+          accountAbstraction={{
+            chain: avalanche,
+            sponsorGas: true
           }}
-          modalTitleIconUrl="https://example.com/icon.png"
+          wallets={[
+            inAppWallet({
+              auth: {
+                options: ["telegram", "email", "passkey", "phone"]
+              }
+            })
+          ]}
           onConnect={handleConnect}
         />
       ) : (
