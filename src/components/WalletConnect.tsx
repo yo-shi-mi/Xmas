@@ -3,18 +3,24 @@ import { inAppWallet } from "thirdweb/wallets";
 import { avalanche } from "thirdweb/chains";
 import { client } from "../client";
 import { useWalletStore } from '../stores/walletStore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Share2 } from "lucide-react";
 
 export function WalletConnect() {
   const setWallet = useWalletStore((state) => state.setWallet);
-  const { isConnected, address } = useWalletStore();
+  const { isConnected } = useWalletStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const address = queryParams.get('address');
 
   const handleConnect = (wallet: any) => {
     console.log("Connected wallet object:", wallet);
     console.log("Connected wallet address:", wallet.address);
     console.log("Wallet chain ID:", wallet.chainId);
     setWallet(wallet.address);
+
+    navigate(`/?address=${wallet.address}`);
   };
 
   const handleDisconnect = () => {
@@ -50,11 +56,13 @@ export function WalletConnect() {
           </button>
           <button
             onClick={() => {
-              window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + window.location.href);
+                const currentUrl = window.location.href;
+                window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${currentUrl}`);
             }}
-            className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg"
+              className="bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-xl flex items-center justify-center gap-2 text-lg font-semibold transition-colors"
           >
-            Share My Links
+              <Share2 className="w-6 h-6" />
+              Share Tree
           </button>
           <button
             onClick={handleDisconnect}

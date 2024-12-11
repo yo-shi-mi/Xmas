@@ -2,6 +2,8 @@ import { useTreeStore } from '../stores/treeStore';
 import { useWalletStore } from '../stores/walletStore';
 import { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { Metadata } from '@metaplex-foundation/mpl-token-metadata';
 
 // 在 App.tsx 或其他合適的地方定義 collection 地址
 const BSC_COLLECTION_ADDRESS = 'YOUR_BSC_COLLECTION_ADDRESS';
@@ -100,8 +102,10 @@ async function checkNFTExists(address: string, chain: string): Promise<boolean> 
       collectionAddress = AVALANCHE_COLLECTION_ADDRESS;
       break;
     case 'Solana':
-      // Solana 的檢查方式不同，這裡需要使用 Solana 的 SDK
-      return false; // 需要實現 Solana 的檢查邏輯
+      const connection = new Connection('https://api.mainnet-beta.solana.com');
+      const publicKey = new PublicKey(address);
+      const nfts = await Metadata.findDataByOwner(connection, publicKey);
+      return nfts.length > 0; // 如果擁有 NFT，返回 true
     default:
       throw new Error('Unsupported chain');
   }
