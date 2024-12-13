@@ -13,4 +13,9 @@ export default defineConfig({
       'Cache-Control': 'no-store',
     },
   },
+  build: {
+    rollupOptions: {
+      external: ['@solana/web3.js', '@metaplex-foundation/js']
+    }
+  }
 });

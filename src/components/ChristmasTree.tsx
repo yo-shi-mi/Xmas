@@ -3,6 +3,13 @@ import { useWalletStore } from '../stores/walletStore';
 import { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 
+//imports for Solana:
+import { Connection, PublicKey } from '@solana/web3.js';
+import { Metaplex } from '@metaplex-foundation/js';
+
+// Add Solana-specific collection address for devnet
+const SOLANA_COLLECTION_ADDRESS = 'YOUR_DEVNET_COLLECTION_ADDRESS';
+
 // 在 App.tsx 或其他合適的地方定義 collection 地址
 const BSC_COLLECTION_ADDRESS = 'YOUR_BSC_COLLECTION_ADDRESS';
 const AVALANCHE_COLLECTION_ADDRESS = 'YOUR_AVALANCHE_COLLECTION_ADDRESS';
@@ -101,6 +108,32 @@ async function checkNFTExists(address: string, chain: string): Promise<boolean> 
       break;
     case 'Solana':
       // Solana 的檢查方式不同，這裡需要使用 Solana 的 SDK
+      try {
+        // Use Solana devnet connection
+        const connection = new Connection('https://api.devnet-beta.solana.com', 'confirmed');
+        
+        // Convert the wallet address to a Solana PublicKey
+        const walletPublicKey = new PublicKey(address);
+        
+        // Initialize Metaplex for NFT checking
+        const metaplex = new Metaplex(connection);
+        
+        // Convert collection address to PublicKey
+        const collectionPublicKey = new PublicKey(SOLANA_COLLECTION_ADDRESS);
+        
+        // Find NFTs owned by the wallet
+        const nfts = await metaplex.nfts().findAllByOwner({ owner: walletPublicKey });
+        
+        // Check if any NFT belongs to the specified collection
+        const hasCollectionNFT = nfts.some(nft => 
+          nft.collection?.address.toBase58() === collectionPublicKey.toBase58()
+        );
+        
+        return hasCollectionNFT;
+      } catch (error) {
+        console.error('Solana NFT check failed:', error);
+        return false;
+      }
       return false; // 需要實現 Solana 的檢查邏輯
     default:
       throw new Error('Unsupported chain');
