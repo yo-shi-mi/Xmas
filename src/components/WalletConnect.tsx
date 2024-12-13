@@ -5,14 +5,22 @@ import { client } from "../client";
 import { useWalletStore } from '../stores/walletStore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Share2 } from "lucide-react";
+import { useEffect } from 'react';
 
 export function WalletConnect() {
   const setWallet = useWalletStore((state) => state.setWallet);
-  const { isConnected } = useWalletStore();
+  const { isConnected, address: storeAddress } = useWalletStore();
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const address = queryParams.get('address');
+  const urlAddress = queryParams.get('address');
+
+  // 如果 URL 中有地址但 store 中沒有，則更新 store
+  useEffect(() => {
+    if (urlAddress && !storeAddress) {
+      setWallet(urlAddress);
+    }
+  }, [urlAddress, storeAddress, setWallet]);
 
   const handleConnect = (wallet: any) => {
     console.log("Connected wallet object:", wallet);
@@ -24,7 +32,11 @@ export function WalletConnect() {
 
   const handleDisconnect = () => {
     setWallet('');
+    navigate('/');
   };
+
+  // 優先使用 store 中的地址，如果沒有則使用 URL 中的地址
+  const displayAddress = storeAddress || urlAddress;
 
   return (
     <div className="w-full bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-xl flex items-center justify-center gap-2 text-lg font-semibold transition-colors">
@@ -46,7 +58,7 @@ export function WalletConnect() {
         />
       ) : (
         <>
-          <span className="ml-4">已連接: {address}</span>
+            <span className="ml-4">已連接: {displayAddress}</span>
           <button
             onClick={() => navigate('/gifts')}
             className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
