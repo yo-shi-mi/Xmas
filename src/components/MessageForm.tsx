@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, Send } from 'lucide-react';
-import { useContract, useContractWrite, useSDK, useConnect, metamaskWallet } from '@thirdweb-dev/react';
-import { useActiveAccount } from 'thirdweb/react';
+import { useContract, useContractWrite, useSDK, useConnect, metamaskWallet, useAddress } from '@thirdweb-dev/react';
 import { contractABI } from '../contractABI';
 
 const CONTRACT_ADDRESS = "0x007E3B0f772a5012CC1e3FEF67Bcd87167DB2FAD";
@@ -22,7 +21,7 @@ export function MessageForm({ onClose, metadata }: MessageFormProps) {
   const [recipient, setRecipient] = useState('');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const activeAccount = useActiveAccount();
+  const activeAccount = useAddress();
   const { contract } = useContract(CONTRACT_ADDRESS, contractABI[0].abi);
   const { mutateAsync: send } = useContractWrite(contract, "send");
   const sdk = useSDK();
