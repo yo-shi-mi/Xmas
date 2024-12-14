@@ -65,6 +65,7 @@ export function WalletConnect() {
               }
             }),
           createWallet("io.metamask"),
+          createWallet("app.phantom"),
           ]}
           onConnect={handleConnect}
         />

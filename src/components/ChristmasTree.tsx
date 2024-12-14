@@ -51,8 +51,15 @@ async function checkNFTExists(address: string, chain: string): Promise<number> {
           const publicKey = new PublicKey(address);
           const metaplex = new Metaplex(connection);
           const nfts = await metaplex.nfts().findAllByOwner({ owner: publicKey });
-          console.log('Solana NFTs:', nfts.length);
-          return nfts.length;
+
+          // 假設您有一個特定的集合地址
+          const collectionAddress = new PublicKey('HXgUG3oLsBgYdLEcSox2KKy4hKd9oXmztKUnqGFUia6X');
+          const collectionNfts = nfts.filter((nft) => {
+            return nft.collection && nft.collection.address.equals(collectionAddress);
+          });
+
+          console.log('Solana Collection NFTs:', collectionNfts.length);
+          return collectionNfts.length;
         } catch (error) {
           console.log('Solana 檢查錯誤，可能是地址格式不兼容:', error);
           return 0;
