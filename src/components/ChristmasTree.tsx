@@ -3,7 +3,7 @@ import { useWalletStore } from '../stores/walletStore';
 import { useEffect, useState } from 'react';
 import { ethers } from 'ethers';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { Metadata } from '@metaplex-foundation/mpl-token-metadata';
+import { Metaplex } from "@metaplex-foundation/js";
 
 const BSC_COLLECTION_ADDRESS = '0x9b4f143098596edf962e27c7f358a86e3a4683a4';
 const AVALANCHE_COLLECTION_ADDRESS = '0x9b4f143098596edf962e27c7f358a86e3a4683a4';
@@ -49,7 +49,8 @@ async function checkNFTExists(address: string, chain: string): Promise<number> {
             return 0;
           }
           const publicKey = new PublicKey(address);
-          const nfts = await Metadata.findDataByOwner(connection, publicKey);
+          const metaplex = new Metaplex(connection);
+          const nfts = await metaplex.nfts().findAllByOwner({ owner: publicKey });
           console.log('Solana NFTs:', nfts.length);
           return nfts.length;
         } catch (error) {
