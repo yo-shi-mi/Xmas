@@ -3,16 +3,36 @@ import { useNavigate } from 'react-router-dom';
 import { useWalletStore } from '../stores/walletStore';
 import { useEffect, useState } from 'react';
 import { MessageForm } from '../components/MessageForm';
+import { ThirdwebProvider } from '@thirdweb-dev/react';
+import { AvalancheFuji } from '@thirdweb-dev/chains';
+import { metamaskWallet } from '@thirdweb-dev/react';
 
 interface Gift {
-  id: number;
-  from: string;
-  color: string;
+  recipient: string;
+    style?: string;
+    color?: string;
+    message: string;
+    tokenURI: string;
 }
+
+const GIFT_STYLES = {
+  PURPLE: {
+    color: '#800080',
+    uri: 'ipfs://bafkreicxyr4q4is44pkjoazlug2t3sqzua7tkuscpts6xkiuf4tsfaacxy/'
+  },
+  RED: {
+    color: '#FF0000',
+    uri: 'ipfs://bafkreigpqwykzf475mgnol2yoiacmklx4pmwj54ehte5wiu5n4knpvkx6e/'
+  },
+  YELLOW: {
+    color: '#FFFF00',
+    uri: 'ipfs://bafkreie2qzwhcs5yjsq5mibitdosoz4dhm72ve7a4wq52mc72hcpuxqjpq/'
+  }
+};
 
 export function MyGiftsPage() {
   const navigate = useNavigate();
-  const { isConnected } = useWalletStore();
+  const { isConnected, address } = useWalletStore();
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,13 +55,14 @@ export function MyGiftsPage() {
 
     setLoading(true);
     setTimeout(() => {
-      const colors = ['#800080', '#FFFF00', '#FF0000'];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
+      const giftStyles = Object.values(GIFT_STYLES);
+      const randomStyle = giftStyles[Math.floor(Math.random() * giftStyles.length)];
       const newGift: Gift = {
-        id: gifts.length + 1,
-        from: '0x123...',
-        color: randomColor,
+        recipient: address || 'Anonymous',
+        color: randomStyle.color,
+        style: randomStyle.uri,
+        message: '',
+        tokenURI: randomStyle.uri
       };
 
       setGifts((prevGifts) => [...prevGifts, newGift]);
@@ -73,7 +94,6 @@ export function MyGiftsPage() {
         <div className="grid grid-cols-4 gap-4 max-w-2xl mx-auto">
           {gifts.map((gift) => (
             <div
-              key={gift.id}
               className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
               onClick={() => handleGiftClick(gift)}
             >
@@ -83,7 +103,7 @@ export function MyGiftsPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">來自</p>
-                  <p className="text-gray-800 font-medium">{gift.from}</p>
+                  <p className="text-gray-800 font-medium">{gift.recipient}</p>
                 </div>
               </div>
             </div>
@@ -91,20 +111,33 @@ export function MyGiftsPage() {
         </div>
 
         {isModalOpen && selectedGift && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="bg-black opacity-50 absolute inset-0" onClick={() => setIsModalOpen(false)} />
-            <div className="bg-white rounded-lg p-6 z-10">
-              <MessageForm onClose={() => setIsModalOpen(false)} metadata={{
-                id: selectedGift.id,
-                from: selectedGift.from,
-                message: '',
-                date: '',
-                nftCollection: '',
-                nftId: '',
-                chainId: ''
-              }} />
+          <ThirdwebProvider
+            activeChain={AvalancheFuji}
+            clientId={process.env.VITE_TEMPLATE_CLIENT_ID}
+            supportedWallets={[
+              metamaskWallet(),
+            ]}
+            authConfig={{
+              authUrl: "/api/auth",
+              domain: window.location.origin,
+            }}
+          >
+            <div className="fixed inset-0 flex items-center justify-center z-50">
+              <div className="bg-black opacity-50 absolute inset-0" onClick={() => setIsModalOpen(false)} />
+              <div className="bg-white rounded-lg p-6 z-10">
+                <MessageForm 
+                  onClose={() => setIsModalOpen(false)} 
+                  metadata={{
+                    recipient: selectedGift.recipient,
+                    style: selectedGift.style || "default",
+                    color: selectedGift.color || "#000000",
+                    message: selectedGift.message || "",
+                    tokenURI: selectedGift.tokenURI || ""
+                  }} 
+                />
+              </div>
             </div>
-          </div>
+          </ThirdwebProvider>
         )}
 
         <button
