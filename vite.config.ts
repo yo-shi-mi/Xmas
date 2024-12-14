@@ -15,7 +15,14 @@ export default defineConfig({
       },
     }),
   ],
+  resolve: {
+    alias: {
+      '@solana/web3.js': '@solana/web3.js',
+      '@metaplex-foundation/js': '@metaplex-foundation/js'
+    }
+  },
   optimizeDeps: {
+    include: ['@solana/web3.js', '@metaplex-foundation/js'],
     exclude: ['lucide-react'],
     esbuildOptions: {
       define: {
@@ -36,9 +43,6 @@ export default defineConfig({
   build: {
     commonjsOptions: {
       transformMixedEsModules: true,
-    },
-    rollupOptions: {
-      external: ['@solana/web3.js', '@metaplex-foundation/js']
     }
   }
 });
