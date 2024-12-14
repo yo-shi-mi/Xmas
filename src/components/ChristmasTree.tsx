@@ -5,37 +5,124 @@ import { ethers } from 'ethers';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { Metadata } from '@metaplex-foundation/mpl-token-metadata';
 
-// 在 App.tsx 或其他合適的地方定義 collection 地址
-const BSC_COLLECTION_ADDRESS = 'YOUR_BSC_COLLECTION_ADDRESS';
-const AVALANCHE_COLLECTION_ADDRESS = 'YOUR_AVALANCHE_COLLECTION_ADDRESS';
+const BSC_COLLECTION_ADDRESS = '0x9b4f143098596edf962e27c7f358a86e3a4683a4';
+const AVALANCHE_COLLECTION_ADDRESS = '0x9b4f143098596edf962e27c7f358a86e3a4683a4';
 
 // 定義 NFT ABI
 const NFT_ABI = [
   "function balanceOf(address owner) view returns (uint256)"
 ];
 
+// 在 checkNFTExists 函數中，我們需要返回實際的數量而不是布林值
+async function checkNFTExists(address: string, chain: string): Promise<number> {
+  console.log(`開始檢查 ${chain} 鏈上的 NFT，地址:`, address);
+  
+  try {
+    switch (chain) {
+      case 'BSC': {
+        const provider = new ethers.providers.JsonRpcProvider('https://bsc-dataseed.binance.org/');
+        const collectionAddress = BSC_COLLECTION_ADDRESS;
+        console.log('BSC Collection 地址:', collectionAddress);
+        
+        const contract = new ethers.Contract(collectionAddress, NFT_ABI, provider);
+        const balance = await contract.balanceOf(address);
+        console.log('BSC NFT 餘額:', balance.toString());
+        return balance.toNumber();
+      }
+      
+      case 'Avalanche': {
+        const provider = new ethers.providers.JsonRpcProvider('https://api.avax.network/ext/bc/C/rpc');
+        const collectionAddress = AVALANCHE_COLLECTION_ADDRESS;
+        console.log('Avalanche Collection 地址:', collectionAddress);
+        
+        const contract = new ethers.Contract(collectionAddress, NFT_ABI, provider);
+        const balance = await contract.balanceOf(address);
+        console.log('Avalanche NFT 餘額:', balance.toString());
+        return balance.toNumber();
+      }
+      
+      case 'Solana': {
+        try {
+          const connection = new Connection('https://api.mainnet-beta.solana.com');
+          if (address.startsWith('0x')) {
+            console.log('跳過 Solana NFT 檢查 - 不是 Solana 地址格式');
+            return 0;
+          }
+          const publicKey = new PublicKey(address);
+          const nfts = await Metadata.findDataByOwner(connection, publicKey);
+          console.log('Solana NFTs:', nfts.length);
+          return nfts.length;
+        } catch (error) {
+          console.log('Solana 檢查錯誤，可能是地址格式不兼容:', error);
+          return 0;
+        }
+      }
+      
+      default:
+        throw new Error('不支援的鏈');
+    }
+  } catch (error) {
+    console.error(`檢查 ${chain} NFT 時出錯:`, error);
+    return 0;
+  }
+}
+
+// 修改球的渲染邏輯
+function generateBallPositions(count: number, color: string) {
+  const positions = [];
+  const treeTop = 10;    // 樹頂點的 y 座標
+  const treeBottom = 90; // 樹底部的 y 座標
+  const treeCenterX = 50; // 樹的中心 x 座標
+  
+  for (let i = 0; i < count; i++) {
+    // 在樹的高度範圍內隨機選擇 y 座標
+    const y = treeTop + Math.random() * (treeBottom - treeTop);
+    
+    // 根據 y 座標計算該高度的樹寬
+    // 樹的形狀是三角形，所以寬度隨高度變化
+    const treeWidth = ((y - treeTop) / (treeBottom - treeTop)) * 80; // 最大寬度是 80
+    
+    // 計算在該高度下的有效 x 範圍
+    const minX = treeCenterX - (treeWidth / 2);
+    const maxX = treeCenterX + (treeWidth / 2);
+    
+    // 在有效範圍內隨機選擇 x 座標
+    const x = minX + Math.random() * (maxX - minX);
+    
+    positions.push({ x, y, color });
+  }
+  return positions;
+}
+
 export function ChristmasTree() {
   const { treeColor, trunkColor } = useTreeStore();
   const { address } = useWalletStore();
-  const [ballColors, setBallColors] = useState<string[]>(['#FF0000', '#0000FF', '#FFD700']); // 預設顏色
+  const [ballPositions, setBallPositions] = useState<Array<{x: number, y: number, color: string}>>([]);
 
   useEffect(() => {
     const checkNFTs = async () => {
-      if (!address) return;
+      if (!address) {
+        console.log("沒有錢包地址，跳過 NFT 檢查");
+        return;
+      }
 
+      console.log("開始檢查地址的 NFT:", address);
       try {
-        const [bscHasNFT, avalancheHasNFT, solanaHasNFT] = await Promise.all([
+        const [bscCount, avalancheCount, solanaCount] = await Promise.all([
           checkNFTExists(address, 'BSC'),
           checkNFTExists(address, 'Avalanche'),
           checkNFTExists(address, 'Solana')
         ]);
 
-        const colors = [];
-        if (solanaHasNFT) colors.push('#800080'); // 紫色
-        if (bscHasNFT) colors.push('#FFFF00'); // 黃色
-        if (avalancheHasNFT) colors.push('#FF0000'); // 紅色
+        console.log("NFT 數量:", { BSC: bscCount, Avalanche: avalancheCount, Solana: solanaCount });
 
-        setBallColors(colors.length > 0 ? colors : ['#FF0000', '#0000FF', '#FFD700']);
+        const positions = [
+          ...generateBallPositions(bscCount, '#FFFF00'),
+          ...generateBallPositions(avalancheCount, '#FF0000'),
+          ...generateBallPositions(solanaCount, '#800080')
+        ];
+
+        setBallPositions(positions);
       } catch (error) {
         console.error('檢查 NFT 時出錯:', error);
       }
@@ -45,11 +132,7 @@ export function ChristmasTree() {
   }, [address]);
 
   return (
-    <svg
-      viewBox="0 0 100 120"
-      className="w-full h-full"
-      style={{ maxHeight: '60vh' }}
-    >
+    <svg viewBox="0 0 100 120" className="w-full h-full" style={{ maxHeight: '60vh' }}>
       {/* 樹幹 */}
       <rect
         x="45"
@@ -79,38 +162,16 @@ export function ChristmasTree() {
         fill="#FFD700"
       />
       
-      {/* 裝飾品 */}
-      {ballColors.map((color, index) => (
-        <circle key={index} cx={40 + index * 10} cy={35} r="3" fill={color} />
+      {/* 渲染所有球 */}
+      {ballPositions.map((ball, index) => (
+        <circle
+          key={index}
+          cx={ball.x}
+          cy={ball.y}
+          r="3"
+          fill={ball.color}
+        />
       ))}
     </svg>
   );
-}
-
-// 更新 checkNFTExists 函數
-async function checkNFTExists(address: string, chain: string): Promise<boolean> {
-  let provider;
-  let collectionAddress;
-
-  switch (chain) {
-    case 'BSC':
-      provider = new ethers.providers.JsonRpcProvider('https://bsc-dataseed.binance.org/');
-      collectionAddress = BSC_COLLECTION_ADDRESS;
-      break;
-    case 'Avalanche':
-      provider = new ethers.providers.JsonRpcProvider('https://api.avax.network/ext/bc/C/rpc');
-      collectionAddress = AVALANCHE_COLLECTION_ADDRESS;
-      break;
-    case 'Solana':
-      const connection = new Connection('https://api.mainnet-beta.solana.com');
-      const publicKey = new PublicKey(address);
-      const nfts = await Metadata.findDataByOwner(connection, publicKey);
-      return nfts.length > 0; // 如果擁有 NFT，返回 true
-    default:
-      throw new Error('Unsupported chain');
-  }
-
-  const contract = new ethers.Contract(collectionAddress, NFT_ABI, provider);
-  const balance = await contract.balanceOf(address);
-  return balance.gt(0); // 如果擁有 NFT，返回 true
 }

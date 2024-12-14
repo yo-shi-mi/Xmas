@@ -1,6 +1,6 @@
 import { ConnectButton } from "thirdweb/react";
-import { inAppWallet } from "thirdweb/wallets";
-import { avalanche } from "thirdweb/chains";
+import { createWallet, inAppWallet } from "thirdweb/wallets";
+// import { avalanche } from "thirdweb/chains";
 import { client } from "../client";
 import { useWalletStore } from '../stores/walletStore';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -22,12 +22,23 @@ export function WalletConnect() {
     }
   }, [urlAddress, storeAddress, setWallet]);
 
-  const handleConnect = (wallet: any) => {
+  const handleConnect = async (wallet: any) => {
     console.log("Connected wallet object:", wallet);
-    console.log("Connected wallet address:", wallet.address);
-    console.log("Wallet chain ID:", wallet.chainId);
-    setWallet(wallet.address);
-    navigate(`/?address=${wallet.address}`);
+    
+    // 從 getAccount() 返回的物件中獲取地址
+    const accountInfo = await wallet.getAccount();
+    const address = accountInfo.address;
+    console.log("Connected wallet address:", address);
+    
+    const chain = await wallet.getChain();
+    console.log("Wallet chain:", chain);
+
+    if (address) {
+      setWallet(address);
+      navigate(`/?address=${address}`);
+    } else {
+      console.error("無法獲取錢包地址");
+    }
   };
 
   const handleDisconnect = () => {
@@ -43,16 +54,17 @@ export function WalletConnect() {
       {!isConnected ? (
         <ConnectButton
           client={client}
-          accountAbstraction={{
-            chain: avalanche,
-            sponsorGas: true
-          }}
+          // accountAbstraction={{
+          //   chain: avalanche,
+          //   sponsorGas: true
+          // }}
           wallets={[
             inAppWallet({
               auth: {
                 options: ["telegram", "email", "passkey", "phone"]
               }
-            })
+            }),
+          createWallet("io.metamask"),
           ]}
           onConnect={handleConnect}
         />
